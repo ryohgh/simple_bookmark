@@ -1,197 +1,129 @@
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBook, faTrash, faEdit } from "@fortawesome/free-solid-svg-icons";
-import { css } from "@emotion/css";
-import Line from "./Line";
-import { BlockFunctions } from "../interfaces";
 import { useState } from "react";
+import { Box, Button, Typography } from "@mui/material";
+import BookIcon from '@mui/icons-material/Book';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { structureFunctions } from "../functions";
+import theme from "../themes/themes";
+import { UpdatingMordal } from "../components";
 
-function Bookmark({ theme, height, pos, url, name, blockFunctions }: {
-    theme: {
-        bg: string,
-        bg_alt: string,
-        fg: string,
-        fg_alt: string,
-        red: string,
-        accent: string,
-        gray: string
-    },
+interface Props {
     height: number,
     pos: number[],
     url: string | undefined,
     name: string,
-    blockFunctions: BlockFunctions,
-}): JSX.Element {
-    const depth = pos.length;
-    const ENTIRE_CSS = css`
-        color: ${theme.fg};
-        height: ${height.toString() + "px"};
-        width: 100%;
-        background-color: ${theme.bg_alt};
-        position: relative;
-        &:hover {
-            background-color: ${theme.gray};
-            cursor: pointer;
-        }
-    `;
+    // eslint-disable-next-line @typescript-eslint/ban-types
+    updateHierarchy: Function,
+}
 
-    const BOOK_ICON_CSS = css`
-        color: ${theme.fg}; 
-        position: absolute;
-        top: 50%;
-        left: ${(height + depth * 20).toString() + "px"};
-        transform: translate(0,-50%);
-    `;
-    const NAME_CSS = css`
-        color: ${theme.fg}; 
-        position: absolute;
-        left: ${(height + 30 + depth * 20).toString() + "px"};
-        &:hover {
-            cursor: pointer;
-            color: ${theme.accent};
-        }
-    `;
-    const TRASH_ICON_CSS = css`
-        color: ${theme.fg};
-        position: absolute;
-        top: 50%;
-        right: ${(height).toString() + "px"};
-        transform: translate(0,-50%);
-        &:hover {
-            color: ${theme.accent}; 
-        }
-    `;
-    const EDIT_ICON_CSS = css`
-        color: ${theme.fg}; 
-        position: absolute;
-        top: 50%;
-        right: ${(height * 4).toString() + "px"};
-        transform: translate(0,-50%);
-        &:hover {
-            color: ${theme.accent};
-        }
-    `;
-    const NAME_INPUT_CSS = css`
-        background-color: ${theme.bg};
-        border-top: 0px;
-        border-left: 0px;
-        border-right: 0px;
-        border-bottom: 0px solid ${theme.accent};
-        border-radius: 3px;
-        position: absolute;
-        top: 50%;
-        transform: translate(0,-50%);
-        color: ${theme.fg};
-        width: calc(40% - ${(height + 30 + depth * 20 + height * 5).toString() + "px"});
-        left: ${(height + 30 + depth * 20).toString() + "px"};
-        &:focus {
-            outline: none;
-            border: 0.5px solid ${theme.accent};
-        }
-        &::placeholder {
-            position: absolute;
-            font-size: medium;
-        }
-    `;
-
-    const URL_INPUT_CSS = css`
-        background-color: ${theme.bg};
-        border-top: 0px;
-        border-left: 0px;
-        border-right: 0px;
-        border-bottom: 0px solid ${theme.accent};
-        border-radius: 3px;
-        position: absolute;
-        top: 50%;
-        transform: translate(0,-50%);
-        color: ${theme.fg};
-        width: calc(40% - ${(height + 30 + depth * 20 + height * 5).toString() + "px"});
-        left: calc(40% - ${(height * 5 - 10).toString() + "px"});
-        &:focus {
-            outline: none;
-            border: 0.5px solid ${theme.accent};
-        }
-        &::placeholder {
-            position: absolute;
-            font-size: medium;
-        }
-    `;
-
-    const UPDATE_BUTTON_CSS = css`
-        background-color: ${theme.bg};
-        color: ${theme.accent};
-        border: 0.1px solid ${theme.accent};
-        border-radius: 3px;
-        font-size: smaller;
-        padding-left: 5px;
-        padding-right: 5px;
-        position: absolute;
-        top: 50%;
-        transform: translate(0,-50%);
-        left: calc(80% - ${(height + 30 + depth * 20 + height * 10 - 20).toString() + "px"});
-        &:hover {
-            background: ${theme.accent};
-            color: ${theme.fg};
-        }
-        &:active {
-            font-size: small;
-        }
-    `;
-
+function Bookmark({ height, pos, url, name, updateHierarchy }: Props) {
+    const depth = pos.length - 1;
     function openUrl(): void {
         window.open(url, "_blank");
         return
     }
 
-    const [newName, setNewName] = useState(name);
-    const [newUrl, setNewUrl] = useState(url);
-
-    function update(): void {
-        const editFunction = blockFunctions.edit;
-        editFunction(pos, "name", newName);
-        editFunction(pos, "url", newUrl);
-        setEditModeState(false);
-        return
-    }
-
     function deleteSelf(): void {
-        const deleteFunction = blockFunctions.delete;
-        deleteFunction(pos);
+        structureFunctions.deleteBlock(pos);
+        updateHierarchy();
         return
     }
 
-    const [editModeState, setEditModeState] = useState(false);
+    const [deletionState, setDeletionState] = useState<boolean>(false);
+    const [updatingState, setUpdatingState] = useState(false);
+    const FUNCTION_SX = {
+        color: theme.fg_alt,
+        marginRight: "2%",
+        "&:hover": {
+            cursor: "pointer",
+            color: theme.accent,
+        }
+    }
+
     return (<>
-        <div className={ENTIRE_CSS}>
-            <FontAwesomeIcon icon={faBook} className={BOOK_ICON_CSS} />
-            <p
-                className={NAME_CSS}
-                onClick={() => openUrl()}
-            >{name}</p>
-            <FontAwesomeIcon icon={faEdit} className={EDIT_ICON_CSS} onClick={() => setEditModeState(!editModeState)} />
-            <FontAwesomeIcon icon={faTrash} className={TRASH_ICON_CSS} onClick={deleteSelf} />
-            {editModeState &&
-                <>
-                    <input
-                        type="text"
-                        className={NAME_INPUT_CSS}
-                        onChange={e => setNewName(e.target.value)}
-                        placeholder={"current name: " + name}
-                    />
-                    <input
-                        type="text"
-                        className={URL_INPUT_CSS} onChange={e => setNewUrl(e.target.value)}
-                        placeholder={"current url: " + url}
-                    />
-                    <p className={UPDATE_BUTTON_CSS} onClick={update}>
-                        update
-                    </p>
-                </>
-            }
-        </div>
-        <Line
-            theme={theme}
-            width="100%"
-        />
+        <Box
+            display="inline-flex">
+            <Box
+                alignItems="center"
+                display="inline-flex"
+                sx={{
+                    marginTop: "5px",
+                    height: height,
+                    width: "80%",
+                    borderTopLeftRadius: 5,
+                    borderBottomLeftRadius: 5,
+                    backgroundColor: theme.bg_alt,
+                    "&:hover": {
+                        cursor: "pointer",
+                    }
+                }}>
+                <BookIcon
+                    sx={{
+                        color: theme.fg,
+                        marginLeft: depth * 5,
+                    }}></BookIcon>
+                <Typography
+                    onClick={openUrl}
+                    sx={{
+                        color: theme.fg,
+                        marginLeft: "1%",
+                        "&:hover": {
+                            color: theme.accent,
+                        }
+                    }}
+                    variant="h6">
+                    {name}
+                </Typography>
+            </Box>
+            <Box
+                display="inline-flex"
+                alignItems="center"
+                justifyContent="flex-end"
+                sx={{
+                    borderTopRightRadius: 5,
+                    borderBottomRightRadius: 5,
+                    width: "20%",
+                    marginTop: "5px",
+                    height: height,
+                    backgroundColor: theme.bg_alt,
+                }}>
+
+                <EditIcon
+                    onClick={() => setUpdatingState(true)}
+                    sx={FUNCTION_SX}></EditIcon>
+                {deletionState && <>
+                    <Button
+                        sx={{
+                            marginRight: "2%",
+                        }}
+                        color="error"
+                        onClick={deleteSelf}
+                        size="small"
+                        variant="outlined">delete</Button>
+                    <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => setDeletionState(false)}
+                        sx={{
+                            marginRight: "2%",
+                        }}
+                    >cancel</Button>
+                </>}
+
+                <DeleteIcon
+                    onClick={() => setDeletionState(true)}
+                    sx={FUNCTION_SX}></DeleteIcon>
+
+            </Box>
+        </Box>
+        <UpdatingMordal
+            type="bookmark"
+            currentName={name}
+            currentUrl={url}
+            pos={pos}
+            setUpdatingState={setUpdatingState}
+            updatingState={updatingState}
+            updateHierarchy={updateHierarchy} />
     </>);
 }
 

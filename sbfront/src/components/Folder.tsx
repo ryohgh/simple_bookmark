@@ -1,191 +1,176 @@
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFolder, faPlus, faTrash, faPenToSquare } from "@fortawesome/free-solid-svg-icons";
-import { css } from "@emotion/css"
 import React, { useState } from "react";
-import { Line } from "../components";
-import { BlockFunctions } from "../interfaces";
+import { Box, Button, ThemeProvider, Typography } from "@mui/material";
+import FolderIcon from "@mui/icons-material/Folder"
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { structureFunctions } from "../functions";
+import { AddingMordal, UpdatingMordal } from "../components";
+import theme from "../themes/themes";
+import muiTheme from "../themes/muiTheme";
 
-function Folder({ theme, name, height, children, pos, blockFunctions }: {
-    theme: {
-        bg: string,
-        bg_alt: string,
-        fg: string,
-        fg_alt: string,
-        red: string,
-        accent: string,
-        gray: string
-    },
-    name: string,
-    height: number,
-    children: JSX.Element[],
-    pos: number[],
-    blockFunctions: BlockFunctions,
-}): JSX.Element {
-    const depth = pos.length;
-    const OUTER_CSS = css`
-        color: ${theme.fg};
-        height: ${height.toString() + "px"};
-        width: 100%;
-        background-color: ${theme.bg_alt};
-        position: relative;
-        &:hover {
-            background-color: ${theme.gray};
-            cursor: pointer;
-        }
-    `;
-    const INNER_CSS = css`
-        position: absolute;
-        top: 0px;
-        left: 0px;
-        width: 100%;
-        height: 100%;
-    `;
-    const FOLDER_ICON_CSS = css`
-        color: ${theme.fg}; 
-        position: absolute;
-        top: 50%;
-        left: ${(height + depth * 20).toString() + "px"};
-        transform: translate(0,-50%);
+interface Props {
+    name: string;
+    height: number;
+    children: JSX.Element[];
+    pos: number[];
+    // eslint-disable-next-line @typescript-eslint/ban-types
+    updateHierarchy: Function;
+}
 
-    `;
-    const NAME_CSS = css`
-        color: ${theme.fg}; 
-        position: absolute;
-        left: ${(height + 30 + depth * 20).toString() + "px"};
-    `;
-    const TRASH_ICON_CSS = css`
-        color: ${theme.fg}; 
-        position: absolute;
-        top: 50%;
-        right: ${(height).toString() + "px"};
-        transform: translate(0,-50%);
-        &:hover {
-            color: ${theme.accent};
-        }
-    `;
-    const EDIT_ICON_CSS = css`
-        color: ${theme.fg}; 
-        position: absolute;
-        top: 50%;
-        right: ${(height * 4).toString() + "px"};
-        transform: translate(0,-50%);
-        &:hover {
-            color: ${theme.accent};
-        }
-    `;
-    const ADD_ICON_CSS = css`
-        color: ${theme.fg}; 
-        position: absolute;
-        top: 50%;
-        right: ${(height * 3).toString() + "px"};
-        transform: translate(0,-50%);
-        &:hover {
-            color: ${theme.accent};
-        }
-        `;
+function Folder({ name, height, children, pos, updateHierarchy }: Props): JSX.Element {
+    const depth = pos.length - 1;
+    const [addingState, setAddingState] = useState<boolean>(false);
+    const [deletionState, setDeletionState] = useState<boolean>(false);
+    const [updatingState, setUpdatingState] = useState<boolean>(false);
+    const [childrenState, setChildrenState] = useState<boolean>(false);
 
-    const NAME_INPUT_CSS = css`
-        background-color: ${theme.bg};
-        border-top: 0px;
-        border-left: 0px;
-        border-right: 0px;
-        border-bottom: 0px solid ${theme.accent};
-        border-radius: 3px;
-        position: absolute;
-        top: 50%;
-        transform: translate(0,-50%);
-        color: ${theme.fg};
-        width: calc(40% - ${(height + 30 + depth * 20 + height * 5).toString() + "px"});
-        left: ${(height + 30 + depth * 20).toString() + "px"};
-        &:focus {
-            outline: none;
-            border: 0.5px solid ${theme.accent};
-        }
-        &::placeholder {
-            position: absolute;
-            font-size: medium;
-        }
-    `;
 
-    const UPDATE_BUTTON_CSS = css`
-        background-color: ${theme.bg};
-        color: ${theme.accent};
-        border: 0.1px solid ${theme.accent};
-        border-radius: 3px;
-        font-size: smaller;
-        padding-left: 5px;
-        padding-right: 5px;
-        position: absolute;
-        top: 50%;
-        left: calc(40% - ${(height * 5 - 10).toString() + "px"});
-        transform: translate(0,-50%);
-        &:hover {
-            background: ${theme.accent};
-            color: ${theme.fg};
-        }
-        &:active {
-            font-size: small;
-        }
-    `;
-
-    const [newName, setNewName] = useState(name);
-
-    function update(): void {
-        const editFunction = blockFunctions.edit;
-        editFunction(pos, "name", newName);
-        setEditModeState(false);
-        return
-    }
-    
-    function deleteSelf() :void {
-        const deleteFunction = blockFunctions.delete;
-        deleteFunction(pos);
+    function deleteSelf(): void {
+        structureFunctions.deleteBlock(pos);
+        updateHierarchy();
         return
     }
 
-    const [editModeState, setEditModeState] = useState(false);
-    const [isChildrenOpened, setChildrenState] = useState(false);
+    const ARROW_SX = {
+        color: theme.fg,
+        marginLeft: depth * 5,
+        "&:hover": {
+            cursor: "pointer",
+        }
+    };
+    const FOLDER_SX = {
+        color: theme.fg,
+        marginLeft: "2%",
+        "&:hover": {
+            cursor: "pointer",
+            color: theme.accent,
+        }
+    };
+    const FUNCTION_SX = {
+        color: theme.fg_alt,
+        marginRight: "2%",
+        "&:hover": {
+            cursor: "pointer",
+            color: theme.accent,
+        }
+    }
+
+    function Arrow(): JSX.Element {
+        if (childrenState) {
+            return <KeyboardArrowDownIcon
+                fontSize="large"
+                onClick={() => setChildrenState(false)}
+                sx={ARROW_SX}></KeyboardArrowDownIcon>;
+        } else {
+            return <KeyboardArrowRightIcon
+                fontSize="large"
+                onClick={() => setChildrenState(true)}
+                sx={ARROW_SX}></KeyboardArrowRightIcon>
+        }
+    }
+
     return (
         <>
-            <div className={OUTER_CSS}>
-                <div className={INNER_CSS} onClick={() => { setChildrenState(!isChildrenOpened) }}>
-                    <FontAwesomeIcon icon={faFolder} className={FOLDER_ICON_CSS} />
-                    <p
-                        className={NAME_CSS}
-                    >{name}</p>
+            <ThemeProvider theme={muiTheme}>
+                <Box
+                    sx={{
+                        width: "100%",
+                        display: "inline-grid",
+                    }}>
+                    <Box
+                        display="inline-flex">
+                        <Box
+                            alignItems="center"
+                            display="inline-flex"
+                            sx={{
+                                marginTop: "5px",
+                                borderTopLeftRadius: 5,
+                                borderBottomLeftRadius: 5,
+                                width: "80%",
+                                height: height,
+                                backgroundColor: theme.bg_alt,
+                            }}>
+                            {Arrow()}
+                            <FolderIcon
+                                onClick={() => setChildrenState(!childrenState)}
+                                sx={FOLDER_SX}></FolderIcon>
+                            <Typography
+                                onClick={() => setChildrenState(!childrenState)}
+                                sx={FOLDER_SX}
+                                variant="h6">
+                                {name}
+                            </Typography>
+                        </Box>
+                        <Box
+                            alignItems="center"
+                            justifyContent="flex-end"
+                            display="inline-flex"
+                            sx={{
+                                borderTopRightRadius: 5,
+                                borderBottomRightRadius: 5,
+                                width: "20%",
+                                marginTop: "5px",
+                                height: height,
+                                backgroundColor: theme.bg_alt,
+                            }}>
+                            <AddIcon
+                                onClick={() => setAddingState(true)}
+                                fontSize="large"
+                                sx={FUNCTION_SX}></AddIcon>
+                            <EditIcon sx={FUNCTION_SX}></EditIcon>
+                            {deletionState && <>
+                                <Button
+                                    sx={{
+                                        marginRight: "2%",
+                                    }}
+                                    color="error"
+                                    onClick={deleteSelf}
+                                    size="small"
+                                    variant="outlined">delete</Button>
+                                <Button
+                                    size="small"
+                                    variant="outlined"
+                                    onClick={() => setDeletionState(false)}
+                                    sx={{
+                                        marginRight: "2%",
+                                    }}
+                                >cancel</Button>
+                            </>}
+                            <DeleteIcon
+                                onClick={() => setDeletionState(true)}
+                                sx={FUNCTION_SX}></DeleteIcon>
 
-                </div>
-                {editModeState && <>
-                    <input
-                        type="text"
-                        className={NAME_INPUT_CSS}
-                        onChange={e => setNewName(e.target.value)}
-                        placeholder={"current name: " + name}
-                    />
-                    <p className={UPDATE_BUTTON_CSS} onClick={update}>
-                        update
-                    </p>
-                </>
-                }
-                <FontAwesomeIcon icon={faTrash} className={TRASH_ICON_CSS} onClick={deleteSelf}/>
-                <FontAwesomeIcon icon={faPenToSquare} className={EDIT_ICON_CSS} onClick={() => setEditModeState(!editModeState)} />
-                <FontAwesomeIcon icon={faPlus} className={ADD_ICON_CSS} />
-            </div>
-            <Line
-                theme={theme}
-                width="100%"
-            />
-            {isChildrenOpened &&
-                <>
-                    {React.Children.toArray(children.map((child) => {
-                        return (<>
-                            {child}
-                        </>);
-                    }))}
-                </>
-            }
+                        </Box>
+                    </Box>
+                    {childrenState &&
+                        <>
+                            {React.Children.toArray(children.map((child) => {
+                                return (<>
+                                    {child}
+                                </>);
+                            }))}
+                        </>
+                    }
+                </Box>
+                <AddingMordal
+                    updateHierarchy={updateHierarchy}
+                    addingState={addingState}
+                    setAddingState={setAddingState}
+                    pos={pos}
+                />
+                <UpdatingMordal
+                    updateHierarchy={updateHierarchy}
+                    updatingState={updatingState}
+                    setUpdatingState={setUpdatingState}
+                    pos={pos}
+                    currentName={name}
+                    currentUrl={undefined}
+                    type="folder" />
+            </ThemeProvider>
         </>
     );
 }
-
 export default Folder;

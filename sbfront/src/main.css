@@ -10,8 +10,13 @@ html {
   -webkit-box-sizing: inherit;
   box-sizing: inherit;
 }
-
 p {
-  margin-top: 0;
-  font-family: "Jetbrains Mono", monospace;
+  /* position: relative;
+  top: 50%;
+  transform: translateY(-50%); */
+  margin-top: 0px;
+  margin-left: 0px;
+  /* font-family: 'Roboto', sans-serif; */
+  /* transition:cubic-bezier(0.6, -0.28, 0.735, 0.045) */
+  /* transition-duration: 1s; */
 }

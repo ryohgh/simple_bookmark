@@ -1,15 +1,7 @@
 import { css } from "@emotion/css";
+import theme from "../themes/themes";
 
-function Line({ theme, width }: {
-    theme: {
-        bg: string,
-        bg_alt: string,
-        fg: string,
-        fg_alt: string,
-        red: string,
-        accent: string,
-        gray: string,
-    },
+function Line({ width }: {
     width: string,
 }): JSX.Element {
     return (<>

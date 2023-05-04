@@ -3,11 +3,12 @@
         "gruvbox": {
             "bg": "#1d2021",
             "bg_alt": "#282828",
-            "fg": "#d5c4a1",
-            "fg_alt": "#fbf1c7",
+            "fg_alt": "#d5c4a1",
+            "fg": "#fbf1c7",
             "red": "#cc241d",
             "accent": "#689d6a",
-            "gray" : "#3c3836"
+            "gray" : "#3c3836",
+            "sc" : "#458588"
         }
     }
 }
