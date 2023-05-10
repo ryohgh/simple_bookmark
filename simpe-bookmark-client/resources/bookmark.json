@@ -1,12 +1,12 @@
 {
-    "bookmarkStructure": [
+    "bookmark_structure": [
         {
-            "type": "folder",
-            "....": "...."
-        },
-        {
-            "type": "folder",
-            "....": "...."
+            "block_pos": [
+                2
+            ],
+            "block_type": "folder",
+            "block_name": "a",
+            "block_children": []
         }
     ]
 }

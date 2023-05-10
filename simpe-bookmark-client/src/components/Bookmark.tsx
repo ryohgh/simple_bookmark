@@ -60,11 +60,11 @@ function Bookmark({ height, pos, url, name, updateHierarchy }: Props) {
                     }
                 }}>
                 <KeyboardArrowDownIcon
-                sx={{
-                    color: "rgba(0,0,0,0)",
-                    marginLeft: depth * 3,
-                }}
-                fontSize="large"></KeyboardArrowDownIcon>
+                    sx={{
+                        color: "rgba(0,0,0,0)",
+                        marginLeft: depth * 3,
+                    }}
+                    fontSize="large"></KeyboardArrowDownIcon>
                 <BookIcon
                     sx={{
                         color: theme.fg,

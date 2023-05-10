@@ -3,7 +3,6 @@ import muiTheme from "../themes/muiTheme";
 import { Box, Button, ThemeProvider, Typography } from "@mui/material";
 import { useState } from "react";
 import AddingMordal from "./AddingMordal";
-import { appWindow } from "@tauri-apps/api/window";
 
 interface Props {
     height: number;
@@ -13,9 +12,6 @@ interface Props {
 
 export default function Topbar({ height, update }: Props): JSX.Element {
     const [addingState, setAddingState] = useState<boolean>(false);
-    function close() {
-        appWindow.close();
-    }
     return (<>
         <ThemeProvider theme={muiTheme}>
             <Box
@@ -53,13 +49,6 @@ export default function Topbar({ height, update }: Props): JSX.Element {
                         }}
                         onClick={() => setAddingState(true)}
                         variant="contained">add</Button>
-                    <Button
-                        onClick={close}
-                        color="error"
-                        sx={{
-                            marginRight: "2%",
-                        }}
-                        variant="contained">exit</Button>
                 </Box>
             </Box>
         </ThemeProvider>

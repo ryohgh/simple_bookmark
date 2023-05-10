@@ -3,22 +3,54 @@ import compareList from "./compareList";
 import { invoke } from "@tauri-apps/api/tauri";
 
 let structure: BookmarkBlock[] = [];
+let state: boolean = true;
 
 function getStructure(): BookmarkBlock[] {
   return structure;
 }
 
+function setState(nextState: boolean) {
+  state = nextState;
+  return;
+}
+
 // function triggers storing bookmark information to the json file.
-async function storeBookmarkStructure() {
-  const bookmarkStructureJson = JSON.stringify(getStructure());
-  invoke("store_bookmark_info", { bookmarkStructureJson })
+async function saveStructure() {
+  const structure = {
+    bookmark_structure: getStructure(),
+  };
+  const bookmarkStructureJson = JSON.stringify(structure);
+  await invoke("save_structure", { bookmarkStructureJson })
     .then((res) => {
-      console.log(res);
+      return res;
     })
     .catch((err) => {
-      console.log(err);
+      throw err;
     });
-  return;
+}
+
+async function fetchStructure() {
+  if (state) {
+    setState(false);
+    await invoke("fetch_structure")
+      .then((res) => {
+        const res_string = res as string;
+        const fetched_structure: BookmarkBlock[] = JSON.parse(res_string);
+        console.log(fetched_structure);
+        if (fetched_structure === undefined) {
+          setState(true);
+          return;
+        } else {
+          structure = fetched_structure;
+          setState(true);
+          return;
+        }
+      })
+      .catch((err) => {
+        setState(false);
+        throw err;
+      });
+  }
 }
 
 function search(pos: number[]): {
@@ -97,63 +129,68 @@ function addBlock(
   name: string,
   url: string | undefined
 ) {
-  if (compareList(pos, [0])) {
-    let lastId: number;
-    if (structure.length > 0) {
-      lastId = structure[structure.length - 1].block_pos[0];
-    } else {
-      lastId = 1;
-    }
-    const newBlock: BookmarkBlock = {
-      block_pos: [lastId + 1],
-      block_type: type,
-      block_name: name,
-      block_url: url,
-      block_children: [],
-    };
-    structure.push(newBlock);
-    // tmp
-    storeBookmarkStructure();
-    //
-    return;
-  } else {
-    const result = search(pos);
-    if (result.isFailed) {
+  if (state) {
+    setState(false);
+    if (compareList(pos, [0])) {
+      let lastId: number;
+      if (structure.length > 0) {
+        lastId = structure[structure.length - 1].block_pos[0];
+      } else {
+        lastId = 1;
+      }
+      const newBlock: BookmarkBlock = {
+        block_pos: [lastId + 1],
+        block_type: type,
+        block_name: name,
+        block_url: url,
+        block_children: [],
+      };
+      structure.push(newBlock);
+      setState(true);
       return;
-    }
-    const currentFolder = result.foundBlock;
-    if (currentFolder?.block_type === "folder") {
-      if (currentFolder.block_children !== undefined) {
-        const lastChild =
-          currentFolder.block_children[currentFolder.block_children.length - 1];
-        let lastChildId: number;
-        if (lastChild === undefined) {
-          lastChildId = 1;
-        } else {
-          lastChildId = lastChild.block_pos[lastChild.block_pos.length - 1] + 1;
-        }
-        const newPos: number[] = [];
-        for (let i = 0; i < pos.length; i++) {
-          newPos.push(pos[i]);
-        }
-        newPos.push(lastChildId);
-        const newBlock: BookmarkBlock = {
-          block_pos: newPos,
-          block_type: type,
-          block_name: name,
-          block_url: url,
-          block_children: [],
-        };
-        currentFolder.block_children?.push(newBlock);
-        // tmp
-        storeBookmarkStructure();
-        //
+    } else {
+      const result = search(pos);
+      if (result.isFailed) {
+        setState(true);
         return;
       }
-    } else {
+      const currentFolder = result.foundBlock;
+      if (currentFolder?.block_type === "folder") {
+        if (currentFolder.block_children !== undefined) {
+          const lastChild =
+            currentFolder.block_children[
+              currentFolder.block_children.length - 1
+            ];
+          let lastChildId: number;
+          if (lastChild === undefined) {
+            lastChildId = 1;
+          } else {
+            lastChildId =
+              lastChild.block_pos[lastChild.block_pos.length - 1] + 1;
+          }
+          const newPos: number[] = [];
+          for (let i = 0; i < pos.length; i++) {
+            newPos.push(pos[i]);
+          }
+          newPos.push(lastChildId);
+          const newBlock: BookmarkBlock = {
+            block_pos: newPos,
+            block_type: type,
+            block_name: name,
+            block_url: url,
+            block_children: [],
+          };
+          currentFolder.block_children?.push(newBlock);
+          setState(true);
+          return;
+        }
+      } else {
+        setState(true);
+        return;
+      }
+      setState(true);
       return;
     }
-    return;
   }
 }
 
@@ -162,59 +199,67 @@ function updateBlock(
   target: string,
   payload: string | undefined
 ) {
-  const result = search(pos);
-  if (result.isFailed) {
-    return;
-  }
-  if (typeof result.foundBlock === "object") {
-    switch (target) {
-      case "name":
-        if (payload !== undefined) {
-          result.foundBlock.block_name = payload;
-        }
-      case "url":
-        result.foundBlock.block_url = payload;
+  if (state) {
+    setState(false);
+    const result = search(pos);
+    if (result.isFailed) {
+      setState(true);
+      return;
     }
-    // tmp
-    storeBookmarkStructure();
-    //
+    if (typeof result.foundBlock === "object") {
+      switch (target) {
+        case "name":
+          if (payload !== undefined) {
+            result.foundBlock.block_name = payload;
+          }
+        case "url":
+          result.foundBlock.block_url = payload;
+      }
+      setState(true);
+      return;
+    }
+    setState(true);
     return;
   }
-  return;
 }
 
 function deleteBlock(pos: number[]) {
-  if (pos.length > 1) {
-    const lastNum: number = pos[pos.length - 1];
-    pos.pop();
-    const parentPos = pos;
-    const result = search(parentPos);
-    if (result.isFailed) {
+  if (state) {
+    setState(false);
+    if (pos.length > 1) {
+      const lastNum: number = pos[pos.length - 1];
+      pos.pop();
+      const parentPos = pos;
+      const result = search(parentPos);
+      if (result.isFailed) {
+        setState(true);
+        return;
+      }
+      pos.push(lastNum);
+      if (result.foundBlock !== undefined) {
+        result.foundBlock.block_children =
+          result.foundBlock.block_children?.filter(
+            (block) => !compareList(block.block_pos, pos)
+          );
+        setState(true);
+        return;
+      }
+      setState(true);
+      return;
+    } else {
+      structure = structure.filter(
+        (block) => !compareList(block.block_pos, pos)
+      );
+      setState(true);
       return;
     }
-    pos.push(lastNum);
-    if (result.foundBlock !== undefined) {
-      result.foundBlock.block_children =
-        result.foundBlock.block_children?.filter(
-          (block) => !compareList(block.block_pos, pos)
-        );
-      // tmp
-      storeBookmarkStructure();
-      //
-      return;
-    }
-    return;
-  } else {
-    structure = structure.filter((block) => !compareList(block.block_pos, pos));
-    // tmp
-    storeBookmarkStructure();
-    //
-    return;
   }
 }
 
 const structureFunctions = {
+  fetchStructure: fetchStructure,
   getStructure: getStructure,
+  saveStructure: saveStructure,
   addBlock: addBlock,
   deleteBlock: deleteBlock,
   updateBlock: updateBlock,

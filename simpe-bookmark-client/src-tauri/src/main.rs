@@ -3,21 +3,39 @@
 
 // internal modules
 mod bookmark;
-
 use bookmark::BookmarkStructure;
 
 // external modules (including std libraries)
+use serde_json::{json, Value};
+use std::fs::{self, File};
+use std::io::{self, Read, Write};
 
 // tauri APIs
 #[tauri::command]
-fn store_bookmark_info(bookmark_structure_json: String) -> Result<String, String> {
-    let convert_result = serde_json::from_str::<Vec<BookmarkStructure>>(&bookmark_structure_json);
-    let bookmark_structure = match convert_result {
-        Ok(structure) => structure,
-        Err(err) => return Err(format!("bookmark structure convertasion failed {}", err)),
-    };
-    println!("{:?}", bookmark_structure);
-    Ok(format!("").into())
+fn save_structure(bookmark_structure_json: String) -> Result<(), String> {
+    println!("{}", bookmark_structure_json);
+    let result = bookmark::save_structure(&bookmark_structure_json);
+    match result {
+        Err(err) => {
+            let error_string = format!("failed to save bookmark structure: \n{}", err.to_string());
+            println!("{}", error_string);
+            return Err(error_string);
+        }
+        Ok(()) => return Ok(()),
+    }
+}
+
+#[tauri::command]
+fn fetch_structure() -> Result<String, String> {
+    let result = bookmark::fetch_structure();
+    match result {
+        Ok(contents) => return Ok(contents),
+        Err(err) => {
+            let error_string = format!("failed to fetch bookmark structure: \n{}", err.to_string());
+            println!("{}", error_string);
+            return Err(error_string);
+        }
+    }
 }
 
 #[tauri::command]
@@ -26,9 +44,8 @@ fn tmp_function() {
 }
 
 fn main() {
-
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![store_bookmark_info,tmp_function])
+        .invoke_handler(tauri::generate_handler![fetch_structure, save_structure, tmp_function])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

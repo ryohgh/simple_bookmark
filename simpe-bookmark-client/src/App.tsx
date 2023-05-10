@@ -1,31 +1,41 @@
 import { useState } from "react";
-import { invoke } from "@tauri-apps/api/tauri";
 import Hierarchy from "./components/Hierarchy";
 import theme from "./themes/themes";
-import { Topbar } from "./components";
-import { appWindow } from "@tauri-apps/api/window";
+import { ConfirmMordal, Topbar } from "./components";
+import { structureFunctions } from "./functions";
 
 window.document.body.style.backgroundColor = theme.bg;
 const HEIGHT = 40;
 
-appWindow.listen("tauri://close-requested", () => {
-  invoke("tmp_function");
+let hierarchyState = false;
+
+structureFunctions.fetchStructure().then(() => {
+  ;
+  console.log("success!");
+}).catch(err => {
+  // handling when error of fetching structure occurs 
+  setHierarchyState(true);
 });
 
-
 function App() {
-  const [, forceUpdate] = useState<number>(0);
+  const [, forceUpdate] = useState(0);
   function update() {
     forceUpdate(prevState => prevState + 1);
     return
   }
+
+
   return (<>
     <Topbar
       update={update}
       height={HEIGHT}
     />
-    <Hierarchy
-      height={HEIGHT}
+    {hierarchyState &&
+      <Hierarchy
+        height={HEIGHT}
+      />
+    }
+    <ConfirmMordal
     />
   </>);
 }
